@@ -1,0 +1,147 @@
+@keyframes gradiant {
+  0% {
+    background-position: 50% 0
+  }
+  100% {
+    background-position: 50% 100%
+  }
+}
+
+.box-with-shadow {
+  box-shadow: 0 0 2px rgb(255, 204, 0),
+  0 1px 0 rgb(236, 190, 3),
+  0 2px 0 rgb(217, 175, 6),
+  0 3px 0 rgb(198, 161, 10),
+  0 4px 0 rgb(179, 147, 13),
+  0 5px 0 rgb(160, 132, 16),
+  0 6px 0 rgb(142, 118, 19),
+  0 7px 0 rgb(123, 104, 22),
+  0 8px 0 rgb(104, 89, 25),
+  0 9px 0 rgb(85, 75, 29),
+  0 10px 0 rgb(66, 61, 32),
+  0 11px 10px rgb(47, 46, 35),
+  0 0 10px rgba(28, 32, 38, .2);
+}
+
+.text-with-shadow {
+  text-shadow: 0 0 2px rgb(255, 204, 0),
+  0 1px 0 rgb(236, 190, 3),
+  0 2px 0 rgb(217, 175, 6),
+  0 3px 0 rgb(198, 161, 10),
+  0 4px 0 rgb(179, 147, 13),
+  0 5px 0 rgb(160, 132, 16),
+  0 6px 0 rgb(142, 118, 19),
+  0 7px 0 rgb(123, 104, 22),
+  0 8px 0 rgb(104, 89, 25),
+  0 9px 0 rgb(85, 75, 29),
+  0 10px 0 rgb(66, 61, 32),
+  0 11px 10px rgb(47, 46, 35),
+  0 0 10px rgba(28, 32, 38, .2);
+}
+
+.text-design {
+  color: #1C2026;
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  margin: 0;
+  transform-style: preserve-3d;
+}
+
+.text-with-font {
+  font-weight: bold;
+  font-family: Roboto, sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+a, h1, h2, h3, h4, p {
+  margin: 0;
+  padding: 0;
+  color: beige;
+}
+
+button {
+  border: none;
+  transition: transform .5s;
+  border-radius: 5px;
+  margin: 10px;
+}
+
+button:hover, button:focus {
+  transform: scale(105%);
+}
+
+button:disabled {
+  filter: saturate(0%);
+}
+
+input[type=text], input[type=password], input[type=number] {
+  background: #0D0D0D;
+  color: beige;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: small;
+}
+
+.scrollbar-vertical {
+  overflow-y: scroll;
+  overflow-x: clip;
+}
+
+.scrollbar-horizontal {
+  overflow-y: clip;
+  overflow-x: scroll;
+}
+
+.scrollbar-vertical, .scrollbar-horizontal {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+
+.scrollbar-vertical::-webkit-scrollbar, .scrollbar-horizontal::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-vertical::-webkit-scrollbar-thumb, .scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background: #cacaca;
+  border-radius: 20px;
+}
+
+.scrollbar-vertical::-webkit-scrollbar-thumb:hover, .scrollbar-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #ababab;
+}
+
+.scrollbar-vertical::-webkit-scrollbar-track, .scrollbar-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 0 #F0F0F0;
+  margin: 5px 0;
+}
+
+button {
+  border: none;
+}
+
+table {
+  border-radius: 5px;
+  overflow: hidden;
+  border-collapse: collapse;
+}
+
+td, th {
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+tr:nth-child(odd) {
+  background-color: rgba(0, 0, 0, 0.1);
+}
