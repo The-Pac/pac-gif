@@ -1745,11 +1745,13 @@ name = "pac-gif"
 version = "0.0.0"
 dependencies = [
  "log",
+ "png",
  "serde",
  "serde_json",
  "simple_logger",
  "tauri",
  "tauri-build",
+ "windows 0.48.0",
 ]
 
 [[package]]
@@ -3489,6 +3491,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e745dab35a0c4c77aa3ce42d595e13d2003d6902d6b08c9ef5fc326d08da12b"
 dependencies = [
  "windows-targets 0.42.2",
+]
+
+[[package]]
+name = "windows"
+version = "0.48.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e686886bc078bc1b0b600cac0147aadb815089b6e4da64016cbd754b6342700f"
+dependencies = [
+ "windows-targets 0.48.0",
 ]
 
 [[package]]
