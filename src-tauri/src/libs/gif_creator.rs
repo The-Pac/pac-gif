@@ -1,124 +1,94 @@
-use std::mem;
-use windows::Win32::Graphics::Gdi::{BI_RGB, BITMAP, BITMAPINFO, CreatedHDC, BITMAPINFOHEADER, DIB_RGB_COLORS, GetDIBits, GetObjectW, RGBQUAD, SelectObject, SetStretchBltMode, SRCCOPY, STRETCH_HALFTONE, StretchBlt};
+use std::{mem, ptr};
+use std::error::Error;
+use std::io::Write;
+use winapi::um::winuser::{GetClientRect, GetDC, ReleaseDC, ShowWindow, SW_HIDE, SW_RESTORE};
+use winapi::shared::windef::{HDC, HWND, RECT};
+use winapi::um::wingdi::{SRCCOPY, StretchDIBits};
+
 
 pub fn capture_area(x: i32, y: i32, width: i32, height: i32) -> Result<Image, ()> {
-    let monitor_info_exw = get_monitor_info_exw_from_id(display_id)?;
+    // Obtenir le handle de la fenêtre active
+    let window = unsafe { winapi::um::winuser::GetForegroundWindow() };
 
-    let sz_device = monitor_info_exw.szDevice;
-    let sz_device_ptr = sz_device.as_ptr();
+    // Obtenir le contexte de périphérique de la fenêtre
+    let hdc: HDC = unsafe { GetDC(window) };
 
-    let dcw_drop_box = drop_box!(
-    CreatedHDC,
-    unsafe {
-      CreateDCW(
-        PCWSTR(sz_device_ptr),
-        PCWSTR(sz_device_ptr),
-        PCWSTR(ptr::null()),
-        None,
-      )
-    },
-    |dcw| unsafe { DeleteDC(dcw) }
-  );
+    // Obtenir les dimensions de la fenêtre
+    let mut rect: RECT = unsafe { mem::zeroed() };
+    unsafe { GetClientRect(window, &mut rect) };
 
-    let compatible_dc_drop_box = drop_box!(
-    CreatedHDC,
-    unsafe { CreateCompatibleDC(*dcw_drop_box) },
-    |compatible_dc| unsafe { DeleteDC(compatible_dc) }
-  );
+    // Créer un tampon pour stocker les données de l'image
+    let size = (rect.right - rect.left) * (rect.bottom - rect.top) * 4;
+    let mut buffer: Vec<u8> = Vec::with_capacity(size as usize);
 
-    let h_bitmap_drop_box = drop_box!(
-    HBITMAP,
-    unsafe { CreateCompatibleBitmap(*dcw_drop_box, width, height) },
-    |h_bitmap| unsafe { DeleteObject(h_bitmap) }
-  );
-
-    unsafe {
-        SelectObject(*compatible_dc_drop_box, *h_bitmap_drop_box);
-        SetStretchBltMode(*dcw_drop_box, STRETCH_HALFTONE);
-    };
-
-    unsafe {
-        StretchBlt(
-            *compatible_dc_drop_box,
+    // Copier les données de l'image dans le tampon
+    let result = unsafe {
+        StretchDIBits(
+            hdc,
             0,
             0,
             width,
             height,
-            *dcw_drop_box,
-            x,
-            y,
+            0,
+            0,
             width,
             height,
+            ptr::null_mut(),
+            &mut buffer,
+            0,
             SRCCOPY,
         )
-            .ok()?;
     };
 
-    let mut bitmap_info = BITMAPINFO {
-        bmiHeader: BITMAPINFOHEADER {
-            biSize: mem::size_of::<BITMAPINFOHEADER>() as u32,
-            biWidth: width,
-            biHeight: height,
-            biPlanes: 1,
-            biBitCount: 32,
-            biCompression: BI_RGB,
-            biSizeImage: 0,
-            biXPelsPerMeter: 0,
-            biYPelsPerMeter: 0,
-            biClrUsed: 0,
-            biClrImportant: 0,
-        },
-        bmiColors: [RGBQUAD::default(); 1],
-    };
+    // Libérer le contexte de périphérique de la fenêtre
+    unsafe { ReleaseDC(window, hdc) };
 
-    let data = vec![0u8; (width * height) as usize * 4];
-    let buf_prt = data.as_ptr() as *mut _;
-
-    let is_success = unsafe {
-        GetDIBits(
-            *compatible_dc_drop_box,
-            *h_bitmap_drop_box,
-            0,
-            height as u32,
-            Some(buf_prt),
-            &mut bitmap_info,
-            DIB_RGB_COLORS,
-        ) == 0
-    };
-
-    if is_success {
-        Err(())
+    // Vérifier si la capture d'écran a réussi
+    if result == 0 {
+        return Err("Impossible de prendre la capture d'écran".into());
     }
 
-    let mut bitmap = BITMAP::default();
-    let bitmap_ptr = <*mut _>::cast(&mut bitmap);
+    // Écrire les données de l'image dans un fichier
+    let mut file = std::fs::File::create("screenshot.bmp")?;
+    let bmp_header = create_bmp_header(&rect)?;
+    file.write_all(&bmp_header)?;
+    file.write_all(&buffer)?;
 
-    unsafe {
-        GetObjectW(
-            *h_bitmap_drop_box,
-            mem::size_of::<BITMAP>() as i32,
-            Some(bitmap_ptr),
-        );
-    }
 
-    let mut chunks: Vec<Vec<u8>> = data
-        .chunks(width as usize * 4)
-        .map(|x| x.to_vec())
-        .collect();
-
-    chunks.reverse();
-
-    let image = Image::from_bgra(
-        chunks.concat(),
-        bitmap.bmWidth as u32,
-        bitmap.bmHeight as u32,
-        bitmap.bmWidthBytes as usize,
-    )?;
-
-    Ok(image)
+    Ok(())
 }
 
-
+fn create_bmp_header(rect: &RECT) -> Result<Vec<u8>, Box<dyn Error>> {
+    let file_size = (rect.right - rect.left) * (rect.bottom - rect.top) * 4 + 54;
+    let bmp_header = vec![
+        b'B', b'M', // Magic number
+        (file_size & 0xFF) as u8, // Taille du fichier en octets (1)
+        (file_size >> 8 & 0xFF) as u8, // Taille du fichier en octets (2)
+        (file_size >> 16 & 0xFF) as u8, // Taille du fichier en octets (3)
+        (file_size >> 24 & 0xFF) as u8, // Taille du fichier en octets (4)
+        0, 0, 0, 0, // Réservé
+        54, 0, 0, 0, // Offset des données de l'image
+        40, 0, 0,
+        (rect.right - rect.left) as u8, // Taille de l'en-tête BITMAPINFOHEADER (1)
+        (rect.right - rect.left >> 8) as u8, // Taille de l'en-tête BITMAPINFOHEADER (2)
+        (rect.right - rect.left >> 16) as u8, // Taille de l'en-tête BITMAPINFOHEADER (3)
+        (rect.right - rect.left >> 24) as u8, // Taille de l'en-tête BITMAPINFOHEADER (4)
+        (rect.bottom - rect.top) as u8, // Largeur de l'image (1)
+        (rect.bottom - rect.top >> 8) as u8, // Largeur de l'image (2)
+        (rect.bottom - rect.top >> 16) as u8, // Largeur de l'image (3)
+        (rect.bottom - rect.top >> 24) as u8, // Largeur de l'image (4)
+        1, 0, // Nombre de plans (1)
+        0, 0, // Nombre de plans (2)
+        24, 0, // Nombre de bits par pixel
+        0, 0, 0, 0, // Compression
+        0, 0, 0, 0, // Taille des données de l'image
+        0, 0, 0, 0, // Résolution horizontale
+        0, 0, 0, 0, // Résolution verticale
+        0, 0, 0, 0, // Nombre de couleurs dans la palette
+        0, 0, 0, 0, // Nombre de couleurs importantes
+    ];
+    Ok(bmp_header)
+}
 
 
 
