@@ -1,55 +1,67 @@
-use std::ffi::c_void;
-use std::io::Error;
 use std::mem;
 use std::mem::size_of;
-use std::ptr;
-use std::ptr::null_mut;
-use winapi::shared::windef::{HBITMAP, HGDIOBJ};
-use winapi::um::wingdi::{BI_RGB, BitBlt, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, DIB_RGB_COLORS, GetDeviceCaps, GetDIBits, SelectObject, SRCCOPY};
-use winapi::um::winuser::{GetDC, GetDesktopWindow, GetWindowDC, ReleaseDC};
 
-pub fn capture_screen(x: i32, y: i32, width: i32, height: i32) -> Result<Vec<u8>, Error> {
+use winapi::shared::minwindef::{DWORD, UINT};
+use winapi::um::errhandlingapi::GetLastError;
+use winapi::um::wingdi::{BI_RGB, BitBlt, BitBlt as GdiBitBlt, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC, DeleteObject, DIB_RGB_COLORS, GetDIBits, SelectObject, SRCCOPY};
+use winapi::um::winnt::LONG;
+use winapi::um::winuser::{GetDC, GetDesktopWindow, ReleaseDC};
+
+pub fn capture_screen(x: i32, y: i32, width: i32, height: i32) -> Result<Vec<u8>, String> {
+    let hwnd = unsafe { GetDesktopWindow() };
+    let hsrc = unsafe { GetDC(hwnd) };
+    let hmem = unsafe { CreateCompatibleDC(hsrc) };
+    let hbmp = unsafe { CreateCompatibleBitmap(hsrc, width, height) };
+    let hbrush = unsafe { CreateSolidBrush(0xFFFFFF) };
+    let oldbmp = unsafe { SelectObject(hmem, hbmp as *mut _) };
+    let oldbrush = unsafe { SelectObject(hmem, hbrush as *mut _) };
+
+    let result = unsafe { BitBlt(hmem, 0, 0, width, height, hsrc, x, y, SRCCOPY) };
+    if result == 0 {
+        let error_code = unsafe { GetLastError() };
+        return Err(format!("BitBlt failed with error code {}", error_code).into());
+    }
+
     let mut bmp_info: BITMAPINFO = unsafe { mem::zeroed() };
-    bmp_info.bmiHeader.biSize = size_of::<BITMAPINFOHEADER>() as u32;
-    bmp_info.bmiHeader.biWidth = width;
-    bmp_info.bmiHeader.biHeight = height;
+    bmp_info.bmiHeader.biSize = size_of::<BITMAPINFOHEADER>() as DWORD;
+    bmp_info.bmiHeader.biWidth = width as LONG;
+    bmp_info.bmiHeader.biHeight = -(height as LONG);
     bmp_info.bmiHeader.biPlanes = 1;
-    bmp_info.bmiHeader.biBitCount = 32;
+    bmp_info.bmiHeader.biBitCount = 24;
     bmp_info.bmiHeader.biCompression = BI_RGB;
 
-    let hdc_screen = unsafe { GetDC(null_mut()) };
-    let hdc = unsafe { CreateCompatibleDC(hdc_screen) };
-    let hbitmap = unsafe { CreateCompatibleBitmap(hdc_screen, width, height) };
-    let hbitmap_old = unsafe { SelectObject(hdc, hbitmap as *mut _) };
+    let bmp_size = ((width * 3 + 3) / 4) * 4 * height;
+    let mut bmp_data = vec![0; bmp_size as usize];
 
-    unsafe {
-        BitBlt(hdc, 0, 0, width, height, hdc_screen, x, y, SRCCOPY);
+    let gdi_result = unsafe { GdiBitBlt(hmem, 0, 0, width as i32, height as i32, hsrc, x as i32, y as i32, SRCCOPY) };
+    if gdi_result == 0 {
+        let error_code = unsafe { GetLastError() };
+        return Err(format!("GdiBitBlt failed with error code {}", error_code));
     }
-
-    let mut buffer: Vec<u8> = Vec::with_capacity((width * height * 4) as usize);
     let result = unsafe {
-        let buffer_ptr = buffer.as_mut_ptr() as *mut c_void;
-        let hbitmap_obj = hbitmap as HBITMAP;
-        let ret = GetDIBits(hdc, hbitmap_obj, 0, height as u32, buffer_ptr, &mut bmp_info, DIB_RGB_COLORS);
-        if ret == 0 {
-            Err(Error::last_os_error())
-        } else {
-            Ok(())
-        }
+        GetDIBits(
+            hmem,
+            hbmp,
+            0,
+            height as UINT,
+            bmp_data.as_mut_ptr() as *mut _,
+            &mut bmp_info,
+            DIB_RGB_COLORS,
+        )
     };
-    if let Err(e) = result {
-        return Err(e);
+    if result == 0 {
+        let error_code = unsafe { GetLastError() };
+        return Err(format!("GetDIBits failed with error code {}", error_code).into());
     }
-
-    let stride = (width * 4) as usize;
-    buffer.resize(stride * height as usize, 0);
 
     unsafe {
-        SelectObject(hdc, hbitmap_old as *mut _);
-        DeleteObject(hbitmap as HGDIOBJ);
-        DeleteDC(hdc);
-        ReleaseDC(null_mut(), hdc_screen);
+        SelectObject(hmem, oldbrush as *mut _);
+        SelectObject(hmem, oldbmp as *mut _);
+        DeleteObject(hbrush as *mut _);
+        DeleteObject(hbmp as *mut _);
+        DeleteDC(hmem);
+        ReleaseDC(hwnd, hsrc);
     }
 
-    Ok(buffer)
+    Ok(bmp_data)
 }
