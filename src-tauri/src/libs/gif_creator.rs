@@ -3,7 +3,7 @@ use std::mem::size_of;
 
 use winapi::shared::minwindef::{DWORD, UINT};
 use winapi::um::errhandlingapi::GetLastError;
-use winapi::um::wingdi::{BI_RGB, BitBlt, BitBlt as GdiBitBlt, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC, DeleteObject, DIB_RGB_COLORS, GetDIBits, SelectObject, SRCCOPY};
+use winapi::um::wingdi::{BI_RGB, BitBlt, BitBlt as GdiBitBlt, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC, DeleteObject, DIB_PAL_COLORS, DIB_RGB_COLORS, GetDIBits, SelectObject, SRCCOPY};
 use winapi::um::winnt::LONG;
 use winapi::um::winuser::{GetDC, GetDesktopWindow, ReleaseDC};
 
@@ -46,7 +46,7 @@ pub fn capture_screen(x: i32, y: i32, width: i32, height: i32) -> Result<Vec<u8>
             height as UINT,
             bmp_data.as_mut_ptr() as *mut _,
             &mut bmp_info,
-            DIB_RGB_COLORS,
+            DIB_PAL_COLORS,
         )
     };
     if result == 0 {

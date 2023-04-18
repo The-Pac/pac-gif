@@ -34,7 +34,7 @@
     },
     "windows": [
       {
-        "fullscreen": false,
+        "fullscreen": true,
         "resizable": false,
         "title": "pac-gif",
         "decorations": false,
