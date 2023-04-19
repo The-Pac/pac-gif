@@ -3,6 +3,7 @@
 
 mod libs;
 mod commands;
+mod models;
 
 use log::{error, info, LevelFilter};
 use simple_logger::SimpleLogger;
