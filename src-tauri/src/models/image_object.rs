@@ -28,11 +28,6 @@ impl ImageObject {
         let u_width = width as usize;
         let u_height = height as usize;
 
-        // 数据对齐，有时传入 bgra 每一行像素点多余宽度值
-        // 例如在 mac 上，截图尺寸为10*10时，返回的数据长度大于400
-        // https://github.com/nashaofu/screenshots-rs/issues/29
-        // https://github.com/nashaofu/screenshots-rs/issues/38
-        // BGRA 转换为 RGBA
         for r in 0..u_height {
             for c in 0..u_width {
                 let index = (r * u_width + c) * 4;

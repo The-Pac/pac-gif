@@ -1,6 +1,7 @@
 use std::mem;
 use std::mem::size_of;
 
+use log::error;
 use png::{BitDepth, ColorType, Encoder, EncodingError};
 use winapi::shared::minwindef::{DWORD, UINT};
 use winapi::um::errhandlingapi::GetLastError;
@@ -91,12 +92,18 @@ pub fn capture_screen(x: i32, y: i32, width: i32, height: i32) -> Result<ImageOb
 
     chunks.reverse();
 
-    let image = ImageObject::from_bgra(
+    match ImageObject::from_bgra(
         chunks.concat(),
         bitmap.bmWidth as u32,
         bitmap.bmHeight as u32,
         bitmap.bmWidthBytes as usize,
-    )?;
-
-    Ok(image)
+    ) {
+        Ok(image) => {
+            Ok(image)
+        }
+        Err(error) => {
+            error!("{}", error);
+            Err("Failed to convert the image".to_string())
+        }
+    }
 }
