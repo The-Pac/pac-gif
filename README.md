@@ -1,38 +1,15 @@
-# create-svelte
+# Pac-Gif
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+Pac-Gif is a test project aimed at creating a GIF capture tool similar to Gyazo using Tauri, Rust, and Svelte. The project is still in its early stages and is not yet finished. Currently, it has some bugs related to color rendering, but it's a good starting point for experimentation and learning.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **GIF Capture**: Capture parts of your screen and save them as GIFs.
+- **Built with Tauri**: Utilizes Tauri for building a lightweight, cross-platform desktop application.
+- **Rust Backend**: Rust is used for handling performance-intensive tasks like GIF creation.
+- **Svelte Frontend**: A simple Svelte interface for interacting with the application.
+- **Cross-platform**: Works on major platforms (Windows, macOS, Linux).
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+## Known Issues
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+- **Color Rendering Bug**: There is an ongoing issue with color rendering during GIF capture. It needs further refinement.
